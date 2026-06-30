@@ -99,10 +99,12 @@ def _order_messages(raw: list[dict]) -> list[Message]:
     ordered: list[Message] = []
     visited: set[str] = set()
 
-    def walk(node: dict, depth: int = 0) -> None:
+    stack = list(reversed(children.get(None, [])))
+    while stack:
+        node = stack.pop()
         uid = node["uuid"]
-        if uid in visited or depth > 10_000:
-            return
+        if uid in visited:
+            continue
         visited.add(uid)
         ordered.append(Message(
             uuid=uid,
@@ -112,13 +114,9 @@ def _order_messages(raw: list[dict]) -> list[Message]:
             timestamp=node["timestamp"],
             is_sidechain=node["is_sidechain"],
         ))
-        for child in children.get(uid, []):
-            walk(child, depth + 1)
+        for child in reversed(children.get(uid, [])):
+            stack.append(child)
 
-    for root in children.get(None, []):
-        walk(root)
-
-    # append orphans not reached via root walk
     for r in raw:
         if r["uuid"] not in visited:
             ordered.append(Message(
