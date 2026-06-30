@@ -1,7 +1,7 @@
 from __future__ import annotations
 import json
 import warnings
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from claude_history.models import (
@@ -33,7 +33,11 @@ def _parse_timestamp(raw: dict) -> datetime | None:
     if not ts:
         return None
     try:
-        return datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
+        ts = str(ts).replace("Z", "+00:00")
+        dt = datetime.fromisoformat(ts)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt
     except (ValueError, AttributeError):
         return None
 

@@ -29,11 +29,12 @@ class HistoryCorpus:
         return self._cache[path]
 
     def sessions(self) -> Iterator[Session]:
+        import warnings
         for f in self._files:
             try:
                 yield self._load(f)
-            except Exception:
-                pass
+            except Exception as e:
+                warnings.warn(f"Skipping {f.name}: {e}")
 
     def all_tool_calls(self) -> list[ToolCall]:
         from claude_history._session import extract_tool_calls

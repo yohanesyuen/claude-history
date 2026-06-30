@@ -21,15 +21,26 @@ def _result_preview(result: str | None, max_chars: int = 60) -> str:
     return s[:max_chars] + "..." if len(s) > max_chars else s
 
 
+def _extract_result_text(content) -> str:
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for item in content:
+            if isinstance(item, dict):
+                parts.append(item.get("text") or item.get("content") or str(item))
+            else:
+                parts.append(str(item))
+        return " ".join(parts)
+    return str(content)
+
+
 def extract_tool_calls(session: Session) -> list[ToolCall]:
     result_map: dict[str, str] = {}
     for msg in session.messages:
         for block in msg.content:
             if isinstance(block, ToolResultBlock):
-                content = block.content
-                if isinstance(content, list):
-                    content = " ".join(str(c) for c in content)
-                result_map[block.tool_use_id] = str(content)
+                result_map[block.tool_use_id] = _extract_result_text(block.content)
 
     calls: list[ToolCall] = []
     for msg in session.messages:

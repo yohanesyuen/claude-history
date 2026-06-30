@@ -1,0 +1,2 @@
+{"uuid":"ltr1","parentUuid":null,"isSidechain":false,"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"tu-ltr1","name":"Read","input":{"path":"/tmp/x"}}]},"sessionId":"sess-ltr","timestamp":"2024-01-01T00:00:00Z"}
+{"uuid":"ltr2","parentUuid":"ltr1","isSidechain":false,"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"tu-ltr1","content":[{"type":"text","text":"actual text"}]}]},"sessionId":"sess-ltr","timestamp":"2024-01-01T00:00:01Z"}

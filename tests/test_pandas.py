@@ -1,19 +1,18 @@
 import sys
+import pytest
 from pathlib import Path
-from unittest.mock import patch
 from claude_history.corpus import HistoryCorpus
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
 
-def test_to_dataframe_raises_without_pandas():
-    corpus = HistoryCorpus.from_dir(FIXTURES)
-    with patch.dict(sys.modules, {"pandas": None}):
-        try:
-            corpus.to_dataframe()
-        except ImportError as e:
-            assert "pandas" in str(e).lower()
-            assert "uv pip install" in str(e).lower() or "pip install" in str(e).lower()
+def test_to_dataframe_raises_without_pandas(monkeypatch):
+    from claude_history import HistoryCorpus as HC
+    # Force pandas to appear absent by setting sys.modules["pandas"] = None
+    monkeypatch.setitem(sys.modules, "pandas", None)
+    corpus = HC.from_dir(FIXTURES)
+    with pytest.raises(ImportError, match="pandas"):
+        corpus.to_dataframe()
 
 
 def test_to_dataframe_shape_with_pandas():

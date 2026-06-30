@@ -70,3 +70,90 @@ def test_metadata_lines_skipped():
     # "mode" record must not appear as a message
     assert not any(m.role == "mode" for m in session.messages)
     assert len(session.messages) == 3
+
+
+def test_deep_chain_no_recursion_error(tmp_path):
+    import json
+    import uuid as _uuid
+
+    DEPTH = 1200
+    lines = []
+    prev_uuid = None
+    session_id = "deep-chain"
+    for i in range(DEPTH):
+        msg_uuid = str(_uuid.uuid4())
+        line = {
+            "type": "user" if i % 2 == 0 else "assistant",
+            "sessionId": session_id,
+            "uuid": msg_uuid,
+            "parentUuid": prev_uuid,
+            "message": {
+                "role": "user" if i % 2 == 0 else "assistant",
+                "content": [{"type": "text", "text": f"msg {i}"}],
+            },
+            "timestamp": "2024-01-01T00:00:00Z",
+        }
+        lines.append(json.dumps(line))
+        prev_uuid = msg_uuid
+    fixture = tmp_path / "deep.jsonl"
+    fixture.write_text("\n".join(lines))
+    session = parse_file(fixture)
+    assert len(session.messages) == DEPTH
+
+
+def test_orphan_message_included(tmp_path):
+    import json
+
+    lines = [
+        json.dumps({
+            "type": "user",
+            "sessionId": "sess-orphan",
+            "uuid": "real-msg",
+            "parentUuid": None,
+            "message": {"role": "user", "content": [{"type": "text", "text": "root"}]},
+            "timestamp": "2024-01-01T00:00:00Z",
+        }),
+        json.dumps({
+            "type": "assistant",
+            "sessionId": "sess-orphan",
+            "uuid": "orphan-msg",
+            "parentUuid": "nonexistent-uuid",
+            "message": {"role": "assistant", "content": [{"type": "text", "text": "orphan"}]},
+            "timestamp": "2024-01-01T00:00:01Z",
+        }),
+    ]
+    fixture = tmp_path / "orphan.jsonl"
+    fixture.write_text("\n".join(lines))
+    session = parse_file(fixture)
+    uuids = {m.uuid for m in session.messages}
+    assert "real-msg" in uuids
+    assert "orphan-msg" in uuids
+
+
+def test_cycle_messages_no_infinite_loop(tmp_path):
+    import json
+
+    lines = [
+        json.dumps({
+            "type": "user",
+            "sessionId": "sess-cycle",
+            "uuid": "msg-a",
+            "parentUuid": "msg-b",
+            "message": {"role": "user", "content": [{"type": "text", "text": "a"}]},
+            "timestamp": "2024-01-01T00:00:00Z",
+        }),
+        json.dumps({
+            "type": "assistant",
+            "sessionId": "sess-cycle",
+            "uuid": "msg-b",
+            "parentUuid": "msg-a",
+            "message": {"role": "assistant", "content": [{"type": "text", "text": "b"}]},
+            "timestamp": "2024-01-01T00:00:01Z",
+        }),
+    ]
+    fixture = tmp_path / "cycle.jsonl"
+    fixture.write_text("\n".join(lines))
+    session = parse_file(fixture)
+    uuids = [m.uuid for m in session.messages]
+    # Both messages present exactly once
+    assert sorted(uuids) == ["msg-a", "msg-b"]

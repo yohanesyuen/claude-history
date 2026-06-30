@@ -70,3 +70,12 @@ def test_stats_counts():
     assert stats["message_count"] == 3
     assert stats["tool_call_count"] == 1
     assert stats["sidechain_count"] == 0
+
+
+def test_list_shaped_tool_result_extracts_text():
+    s = _load("list_tool_result.jsonl")
+    calls = s.tool_calls()
+    assert len(calls) == 1
+    assert calls[0].result == "actual text"
+    # Must not be a Python dict repr
+    assert calls[0].result != "{'type': 'text', 'text': 'actual text'}"
