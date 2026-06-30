@@ -1,0 +1,2 @@
+{"uuid":"m1","parentUuid":null,"isSidechain":false,"type":"user","message":{"role":"user","content":[{"type":"text","text":"Main"}]},"sessionId":"sess-2"}
+{"uuid":"m2","parentUuid":"m1","isSidechain":true,"type":"user","message":{"role":"user","content":[{"type":"text","text":"Subagent"}]},"sessionId":"sess-2"}

@@ -1,0 +1,4 @@
+{"type":"mode","mode":"normal","sessionId":"sess-1"}
+{"uuid":"m1","parentUuid":null,"isSidechain":false,"type":"user","message":{"role":"user","content":[{"type":"text","text":"Hello"}]},"sessionId":"sess-1"}
+{"uuid":"m2","parentUuid":"m1","isSidechain":false,"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Hi"},{"type":"tool_use","id":"tu-1","name":"Bash","input":{"command":"ls"}}]},"sessionId":"sess-1"}
+{"uuid":"m3","parentUuid":"m2","isSidechain":false,"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"tu-1","content":"file.txt"}]},"sessionId":"sess-1"}
