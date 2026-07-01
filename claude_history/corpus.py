@@ -71,3 +71,50 @@ class HistoryCorpus:
     def to_dataframe(self):
         from claude_history._pandas import to_dataframe
         return to_dataframe(self)
+
+    def pain_points(self) -> list:
+        from claude_history._analysis import friction_report
+        reports = [friction_report(s) for s in self.sessions()]
+        return sorted(reports, key=lambda r: r.friction_score, reverse=True)
+
+    def search(self, query: str) -> list:
+        from claude_history._analysis import search_session
+        hits = []
+        for session in self.sessions():
+            hits.extend(search_session(session, query))
+        return hits
+
+    def correction_signals(self) -> list:
+        from claude_history._analysis import correction_signals
+        result = []
+        for session in self.sessions():
+            result.extend(correction_signals(session))
+        return result
+
+    def tool_error_rates(self) -> list[dict]:
+        """Return tools sorted by error rate (errors/calls), highest first."""
+        from claude_history._analysis import tool_error_signals
+        from claude_history._session import extract_tool_calls
+
+        call_counts: dict[str, int] = {}
+        error_counts: dict[str, int] = {}
+
+        for session in self.sessions():
+            for tc in extract_tool_calls(session):
+                call_counts[tc.name] = call_counts.get(tc.name, 0) + 1
+            for sig in tool_error_signals(session):
+                if sig.tool_name != "<api>":
+                    error_counts[sig.tool_name] = error_counts.get(sig.tool_name, 0) + 1
+
+        all_tools = set(call_counts) | set(error_counts)
+        rows = []
+        for name in all_tools:
+            calls = call_counts.get(name, 0)
+            errors = error_counts.get(name, 0)
+            rows.append({
+                "tool": name,
+                "calls": calls,
+                "errors": errors,
+                "error_rate": errors / calls if calls > 0 else 1.0,
+            })
+        return sorted(rows, key=lambda r: r["error_rate"], reverse=True)
